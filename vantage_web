@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>VANTAGE CONNECT</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body { background: #000; color: #fff; font-family: 'Inter', sans-serif; height: 100vh; display: flex; flex-direction: column; }
+        .chat-container { flex-grow: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
+        .msg { max-width: 75%; padding: 12px 16px; border-radius: 20px; font-size: 14px; border: 1px solid #111; }
+        .my { align-self: flex-end; background: #fff; color: #000; border-bottom-right-radius: 4px; }
+        .others { align-self: flex-start; background: #111; border-bottom-left-radius: 4px; }
+        ::-webkit-scrollbar { width: 0; }
+    </style>
+</head>
+<body>
+    <header class="p-4 border-b border-zinc-900 flex justify-between items-center bg-black">
+        <h1 class="text-xs font-black tracking-[4px]">VANTAGE CONNECT</h1>
+    </header>
+    <div id="chat" class="chat-container"></div>
+    <div class="p-4 pb-8 bg-zinc-950 border-t border-zinc-900">
+        <div class="flex gap-2">
+            <input type="text" id="mInput" placeholder="Сообщение..." class="flex-1 bg-zinc-900 rounded-full px-5 py-3 text-sm outline-none">
+            <button onclick="send()" class="w-12 h-12 bg-white text-black rounded-full flex items-center justify-center">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        const user = tg.initDataUnsafe.user || { first_name: "Fronze", id: 1 };
+
+        // ТВОИ ДАННЫЕ ИЗ СКРИНШОТА
+        const firebaseConfig = {
+            apiKey: "AIzaSyBw5zp7yIWJWucAbUVUxpMV4VKXou2P4gQ",
+            authDomain: "vantage-chat-227ff.firebaseapp.com",
+            projectId: "vantage-chat-227ff",
+            storageBucket: "vantage-chat-227ff.firebasestorage.app",
+            messagingSenderId: "248387416956",
+            appId: "1:248387416956:web:9a8941b86ed9e24ef7aaf9",
+            databaseURL: "https://vantage-chat-227ff-default-rtdb.europe-west1.firebasedatabase.app/"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database().ref("messages");
+
+        function send() {
+            const text = document.getElementById('mInput').value.trim();
+            if(!text) return;
+            db.push({ uId: user.id, uName: user.first_name, text: text, time: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) });
+            document.getElementById('mInput').value = '';
+            tg.HapticFeedback.impactOccurred('light');
+        }
+
+        db.limitToLast(30).on("child_added", (snap) => {
+            const m = snap.val();
+            const isMe = m.uId === user.id;
+            document.getElementById('chat').insertAdjacentHTML('beforeend', `
+                <div class="msg ${isMe ? 'my' : 'others'}">
+                    <div class="text-[10px] font-bold mb-1 ${isMe ? 'hidden' : ''}">${m.uName}</div>
+                    ${m.text}
+                </div>
+            `);
+            document.getElementById('chat').scrollTop = document.getElementById('chat').scrollHeight;
+        });
+    </script>
+</body>
+</html>
